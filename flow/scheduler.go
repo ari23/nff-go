@@ -747,11 +747,17 @@ func constructZeroIndex(old []int32) []int32 {
 func constructDuplicatedIndex(old []int32, newIndex []int32) {
 	oldLen := old[0]/2 + old[0]%2
 	newLen := old[0] / 2
+	old[0] = oldLen
 	for q := int32(0); q < newLen; q++ {
 		newIndex[q+1] = old[q+1+oldLen]
 	}
+	// We use this also for cloning receive. Receive has
+	// sctrict condition not to gather packets from one
+	// queue by multiple threads. Here we need to wait
+	// until old receive instance finish working with
+	// current queue. This will depend from BURST_SIZE.
+	time.Sleep(15 * time.Microsecond)
 	newIndex[0] = newLen
-	old[0] = oldLen
 }
 
 func constructNewIndex(inIndexNumber int32) []int32 {
