@@ -6,7 +6,6 @@ package generator
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"math"
 	"math/rand"
@@ -309,9 +308,9 @@ func generateARP(pkt *packet.Packet, config *PacketConfig, rnd *rand.Rand) {
 	}
 	l2 := (*EtherConfig)(config.Data)
 	l3 := (*ARPConfig)(l2.Data)
-	var SHA, THA [common.EtherAddrLen]uint8
+	var SHA, THA common.MACAddress
 	copyAddr(SHA[:], getNextAddr(&(l3.SHA)), common.EtherAddrLen)
-	SPA := binary.LittleEndian.Uint32(To4(getNextAddr(&(l3.SPA))))
+	SPA := common.SliceToIPv4(To4(getNextAddr(&(l3.SPA))))
 	switch l3.Operation {
 	case packet.ARPRequest:
 		if l3.Gratuitous {
@@ -319,7 +318,7 @@ func generateARP(pkt *packet.Packet, config *PacketConfig, rnd *rand.Rand) {
 				panic(fmt.Sprintf("InitGARPAnnouncementRequestPacket returned false"))
 			}
 		} else {
-			TPA := binary.LittleEndian.Uint32(To4(getNextAddr(&(l3.TPA))))
+			TPA := common.SliceToIPv4(To4(getNextAddr(&(l3.TPA))))
 			if !packet.InitARPRequestPacket(pkt, SHA, SPA, TPA) {
 				panic(fmt.Sprintf("InitARPRequestPacket returned false"))
 			}
@@ -331,7 +330,7 @@ func generateARP(pkt *packet.Packet, config *PacketConfig, rnd *rand.Rand) {
 			}
 		} else {
 			copyAddr(THA[:], getNextAddr(&(l3.THA)), common.EtherAddrLen)
-			TPA := binary.LittleEndian.Uint32(To4(getNextAddr(&(l3.TPA))))
+			TPA := common.SliceToIPv4(To4(getNextAddr(&(l3.TPA))))
 			if !packet.InitARPReplyPacket(pkt, SHA, THA, SPA, TPA) {
 				panic(fmt.Sprintf("InitARPReplyPacket returned false"))
 			}
@@ -474,8 +473,8 @@ func fillICMPHdr(pkt *packet.Packet, l4 *ICMPConfig, rnd *rand.Rand) {
 func fillIPHdr(pkt *packet.Packet, l3 *IPConfig) {
 	if l3.Version == 4 {
 		pktIP := (*packet.IPv4Hdr)(pkt.L3)
-		pktIP.SrcAddr = binary.LittleEndian.Uint32(To4(getNextAddr(&(l3.SAddr))))
-		pktIP.DstAddr = binary.LittleEndian.Uint32(To4(getNextAddr(&(l3.DAddr))))
+		pktIP.SrcAddr = common.SliceToIPv4(To4(getNextAddr(&(l3.SAddr))))
+		pktIP.DstAddr = common.SliceToIPv4(To4(getNextAddr(&(l3.DAddr))))
 		return
 	}
 	pktIP := (*packet.IPv6Hdr)(pkt.L3)
